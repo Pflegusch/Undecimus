@@ -1515,22 +1515,24 @@ void jailbreak()
         _assert(ensure_directory("/jb/Library", 0, 0755), message, true);
         _assert(ensure_directory("/jb/Library/LaunchDaemons", 0, 0755), message, true);
         _assert(ensure_directory("/jb/etc/rc.d", 0, 0755), message, true);
-        NSMutableDictionary *dropbear_plist = [NSMutableDictionary new];
-        _assert(dropbear_plist, message, true);
-        dropbear_plist[@"Program"] = @"/jb/usr/local/bin/dropbear";
-        dropbear_plist[@"RunAtLoad"] = @YES;
-        dropbear_plist[@"Label"] = @"ShaiHulud";
-        dropbear_plist[@"KeepAlive"] = @YES;
-        dropbear_plist[@"ProgramArguments"] = [NSMutableArray new];
-        dropbear_plist[@"ProgramArguments"][0] = @"/usr/local/bin/dropbear";
-        dropbear_plist[@"ProgramArguments"][1] = @"-F";
-        dropbear_plist[@"ProgramArguments"][2] = @"-R";
-        dropbear_plist[@"ProgramArguments"][3] = @"--shell";
-        dropbear_plist[@"ProgramArguments"][4] = @"/jb/bin/bash";
-        dropbear_plist[@"ProgramArguments"][5] = @"-p";
-        dropbear_plist[@"ProgramArguments"][6] = @"22";
-        _assert([dropbear_plist writeToFile:@"/jb/Library/LaunchDaemons/dropbear.plist" atomically:YES], message, true);
-        _assert(init_file("/jb/dropbear.plist", 0, 0644), message, true);
+        if (access("/jb/Library/LaunchDaemons/dropbear.plist", F_OK) != ERR_SUCCESS) {
+            NSMutableDictionary *dropbear_plist = [NSMutableDictionary new];
+            _assert(dropbear_plist, message, true);
+            dropbear_plist[@"Program"] = @"/jb/usr/local/bin/dropbear";
+            dropbear_plist[@"RunAtLoad"] = @YES;
+            dropbear_plist[@"Label"] = @"ShaiHulud";
+            dropbear_plist[@"KeepAlive"] = @YES;
+            dropbear_plist[@"ProgramArguments"] = [NSMutableArray new];
+            dropbear_plist[@"ProgramArguments"][0] = @"/usr/local/bin/dropbear";
+            dropbear_plist[@"ProgramArguments"][1] = @"-F";
+            dropbear_plist[@"ProgramArguments"][2] = @"-R";
+            dropbear_plist[@"ProgramArguments"][3] = @"--shell";
+            dropbear_plist[@"ProgramArguments"][4] = @"/jb/bin/bash";
+            dropbear_plist[@"ProgramArguments"][5] = @"-p";
+            dropbear_plist[@"ProgramArguments"][6] = @"22";
+            _assert([dropbear_plist writeToFile:@"/jb/Library/LaunchDaemons/dropbear.plist" atomically:YES], message, true);
+            _assert(init_file("/jb/Library/LaunchDaemons/dropbear.plist", 0, 0644), message, true);
+        }
         for (NSString *file in [fileManager contentsOfDirectoryAtPath:@"/jb/Library/LaunchDaemons" error:nil]) {
             NSString *path = [@"/jb/Library/LaunchDaemons" stringByAppendingPathComponent:file];
             runCommand("/jb/bin/launchctl", "load", path.UTF8String, NULL);
