@@ -1512,6 +1512,9 @@ void jailbreak()
         _assert(ensure_symlink("/jb/usr/local/bin", "/usr/local/bin"), message, true);
         _assert(ensure_symlink("/jb/etc/profile", "/etc/profile"), message, true);
         _assert(ensure_directory("/etc/dropbear", 0, 0755), message, true);
+        _assert(ensure_directory("/jb/Library", 0, 0755), message, true);
+        _assert(ensure_directory("/jb/Library/LaunchDaemons", 0, 0755), message, true);
+        _assert(ensure_directory("/jb/etc/rc.d", 0, 0755), message, true);
         NSMutableDictionary *dropbear_plist = [NSMutableDictionary new];
         _assert(dropbear_plist, message, true);
         dropbear_plist[@"Program"] = @"/jb/usr/local/bin/dropbear";
@@ -1526,9 +1529,18 @@ void jailbreak()
         dropbear_plist[@"ProgramArguments"][4] = @"/jb/bin/bash";
         dropbear_plist[@"ProgramArguments"][5] = @"-p";
         dropbear_plist[@"ProgramArguments"][6] = @"22";
-        _assert([dropbear_plist writeToFile:@"/jb/dropbear.plist" atomically:YES], message, true);
+        _assert([dropbear_plist writeToFile:@"/jb/Library/LaunchDaemons/dropbear.plist" atomically:YES], message, true);
         _assert(init_file("/jb/dropbear.plist", 0, 0644), message, true);
-        _assert(runCommand("/jb/bin/launchctl", "load", "/jb/dropbear.plist", NULL) == ERR_SUCCESS, message, true);
+        for (NSString *file in [fileManager contentsOfDirectoryAtPath:@"/jb/Library/LaunchDaemons" error:nil]) {
+            NSString *path = [@"/jb/Library/LaunchDaemons" stringByAppendingPathComponent:file];
+            runCommand("/jb/bin/launchctl", "load", path.UTF8String, NULL);
+        }
+        for (NSString *file in [fileManager contentsOfDirectoryAtPath:@"/jb/etc/rc.d" error:nil]) {
+            NSString *path = [@"/jb/etc/rc.d" stringByAppendingPathComponent:file];
+            if ([fileManager isExecutableFileAtPath:path]) {
+                runCommand("/jb/bin/bash", "-c", path.UTF8String, NULL);
+            }
+        }
         _assert(runCommand("/jb/bin/launchctl", "stop", "com.apple.cfprefsd.xpc.daemon", NULL) == ERR_SUCCESS, message, true);
         LOG("Successfully enabled SSH.");
         SETMESSAGE(NSLocalizedString(@"Enabled SSH.\n", nil));
